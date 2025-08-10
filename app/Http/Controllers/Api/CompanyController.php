@@ -1,12 +1,11 @@
 <?php
-// app/Http/Controllers/Api/CompanyController.php
-
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Company;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Validator;
 
 class CompanyController extends Controller
 {
@@ -18,15 +17,19 @@ class CompanyController extends Controller
 
     public function store(Request $request): JsonResponse
     {
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'address' => 'nullable|string|max:255',
             'industry' => 'nullable|string|max:255',
         ]);
 
-        $company = auth()->user()->companies()->create($validated);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
 
-        return response()->json($company, 201);
+        $company = auth()->user()->companies()->create($validator->validated());
+
+        return response()->json($company, 200);
     }
 
     public function show(Company $company): JsonResponse
@@ -43,13 +46,17 @@ class CompanyController extends Controller
             return response()->json(['message' => 'Unauthorized'], 403);
         }
 
-        $validated = $request->validate([
+        $validator = Validator::make($request->all(), [
             'name' => 'sometimes|string|max:255',
             'address' => 'nullable|string|max:255',
             'industry' => 'nullable|string|max:255',
         ]);
 
-        $company->update($validated);
+        if ($validator->fails()) {
+            return response()->json(['errors' => $validator->errors()], 422);
+        }
+
+        $company->update($validator->validated());
 
         return response()->json($company);
     }
@@ -62,6 +69,6 @@ class CompanyController extends Controller
 
         $company->delete();
 
-        return response()->json(null, 204);
+        return response()->json(null, 200);
     }
 }
